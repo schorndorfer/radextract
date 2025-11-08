@@ -2844,7 +2844,7 @@ wheels = [
 ]
 
 [[package]]
-name = "rad-extract"
+name = "radextract"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
