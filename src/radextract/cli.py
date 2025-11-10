@@ -1,8 +1,42 @@
 """Command line interface for rad-extract."""
 
+import json
+import rich
 from cyclopts import App
 from pathlib import Path
 
+console = rich.get_console()
+
+def display_data(data: dict) -> None:
+    """Display data from a JSONL row.
+
+    Args:
+        data: The parsed JSON data to display
+    """
+    tokens = data.get('tokens', [])
+    ner = data.get('ner', [])
+    relations = data.get('relations', [])
+
+    # Convert NER lists to tuples: [[start, end, label], ...] -> [(start, end, label), ...]
+    ner = [tuple(item) for item in ner]
+   
+
+    # Create a set of all token indices that are part of any NER span
+    ner_indices = set()
+    for item in ner:
+        start, end = item[0], item[1]
+        ner_indices.update(range(start, end + 1))
+
+    # Build the text with NER tokens highlighted in green
+    highlighted_tokens = []
+    for i, token in enumerate(tokens):
+        if i in ner_indices:
+            highlighted_tokens.append(f"[green]{token}[/green]")
+        else:
+            highlighted_tokens.append(token)
+
+    text = " ".join(highlighted_tokens)
+    console.print(text)
 
 def _path_exists(p):
     """Validate that a path exists. Accepts a string or Path-like object.
@@ -14,7 +48,6 @@ def _path_exists(p):
     if not ppath.exists():
         raise ValueError(f"path does not exist: {ppath}")
     return ppath
-from pathlib import Path
 
 app = App(
     name="rad-extract",
@@ -39,6 +72,37 @@ def batch_process(input_dir: Path, output_dir: Path | None = None, pattern: str 
     print(f"Processing files matching '{pattern}' in {input_dir}")
     if output_dir:
         print(f"Results will be saved to {output_dir}")
+
+@app.command(name="show-row")
+def show_jsonl_row(jsonl_file: Path, row: int) -> None:
+    """Display a specific row from a JSONL file.
+
+    Args:
+        jsonl_file: Path to the JSONL file
+        row: Row index (0-based) to display
+    """
+    if not jsonl_file.exists():
+        raise ValueError(f"File does not exist: {jsonl_file}")
+
+    if not jsonl_file.suffix == '.jsonl':
+        raise ValueError(f"File must have .jsonl extension: {jsonl_file}")
+
+    if row < 0:
+        raise ValueError(f"Row index must be non-negative, got: {row}")
+
+    try:
+        with open(jsonl_file, 'r', encoding='utf-8') as f:
+            for i, line in enumerate(f):
+                if i == row:
+                    data = json.loads(line)
+                    display_data(data)
+                    return
+
+        # If we get here, the row index was out of bounds
+        raise ValueError(f"Row index {row} out of bounds (file has {i + 1} rows)")
+
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON at row {row}: {e}")
 
 def main():
     """Entry point for the CLI."""
