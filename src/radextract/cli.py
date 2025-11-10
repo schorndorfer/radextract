@@ -5,9 +5,10 @@ import rich
 from cyclopts import App
 from pathlib import Path
 from textual.app import App as TextualApp, ComposeResult
-from textual.containers import Container, Vertical
-from textual.widgets import Header, Footer, Static, Label
+from textual.containers import Container, Vertical, Horizontal
+from textual.widgets import Header, Footer, Static, Label, Checkbox
 from textual.screen import Screen
+from textual.reactive import reactive
 
 console = rich.get_console()
 
@@ -49,6 +50,12 @@ class NERViewer(TextualApp):
         padding: 0 1;
     }
 
+    .filter-checkbox {
+        height: auto;
+        padding: 0 1;
+        margin: 0 1;
+    }
+
     .text-content {
         height: auto;
         padding: 1;
@@ -59,6 +66,9 @@ class NERViewer(TextualApp):
         padding: 0 1;
     }
     """
+
+    show_anatomy = reactive(True)
+    show_observation = reactive(True)
 
     def __init__(self, data: dict):
         super().__init__()
@@ -84,12 +94,26 @@ class NERViewer(TextualApp):
         for label, color in color_map.items():
             legend_items.append(Static(f"[{color}]■[/{color}] {label}", classes="legend-item"))
 
-        container = Vertical(*legend_items, id="legend")
+        # Add filter checkboxes
+        filter_section = Vertical(
+            Static("Filters:", classes="legend-item"),
+            Checkbox("Show Anatomy", value=True, id="checkbox-anatomy", classes="filter-checkbox"),
+            Checkbox("Show Observation", value=True, id="checkbox-observation", classes="filter-checkbox"),
+        )
+
+        container = Vertical(*legend_items, filter_section, id="legend")
         container.border_title = "Legend"
         return container
 
     def _create_text_display(self) -> Container:
         """Create the text display with NER highlighting."""
+        text = self._render_text()
+        container = Vertical(Static(text, classes="text-content", id="text-static"), id="text-container")
+        container.border_title = "Text with NER Annotations"
+        return container
+
+    def _render_text(self) -> str:
+        """Render the text with NER highlighting based on current filters."""
         # Handle both "tokens" and "sentences" keys
         if "tokens" in self.data:
             tokens = self.data["tokens"]
@@ -121,6 +145,13 @@ class NERViewer(TextualApp):
         for item in ner_items:
             if len(item) >= 3:
                 start, end, label = item[0], item[1], item[2]
+
+                # Apply filters based on label
+                if "Anatomy" in label and not self.show_anatomy:
+                    continue
+                if "Observation" in label and not self.show_observation:
+                    continue
+
                 color = color_map.get(label, "yellow")
                 for idx in range(start, end + 1):
                     token_colors[idx] = color
@@ -134,10 +165,7 @@ class NERViewer(TextualApp):
             else:
                 highlighted_tokens.append(token)
 
-        text = " ".join(highlighted_tokens)
-        container = Vertical(Static(text, classes="text-content"), id="text-container")
-        container.border_title = "Text with NER Annotations"
-        return container
+        return " ".join(highlighted_tokens)
 
     def _create_relations_display(self) -> Container:
         """Create the relations display."""
@@ -155,6 +183,32 @@ class NERViewer(TextualApp):
         container = Vertical(*relation_widgets, id="relations-container")
         container.border_title = f"Relations ({len(relations)})"
         return container
+
+    def on_checkbox_changed(self, event: Checkbox.Changed) -> None:
+        """Handle checkbox state changes."""
+        if event.checkbox.id == "checkbox-anatomy":
+            self.show_anatomy = event.value
+        elif event.checkbox.id == "checkbox-observation":
+            self.show_observation = event.value
+
+    def watch_show_anatomy(self, new_value: bool) -> None:
+        """React to changes in show_anatomy."""
+        if self.is_mounted:
+            self._update_text_display()
+
+    def watch_show_observation(self, new_value: bool) -> None:
+        """React to changes in show_observation."""
+        if self.is_mounted:
+            self._update_text_display()
+
+    def _update_text_display(self) -> None:
+        """Update the text display with current filter settings."""
+        try:
+            text_widget = self.query_one("#text-static", Static)
+            text_widget.update(self._render_text())
+        except Exception:
+            # Widget not yet mounted, skip update
+            pass
 
 
 def display_data(data: dict) -> None:
