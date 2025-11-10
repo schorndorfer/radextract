@@ -194,11 +194,47 @@ class NERViewer(TextualApp):
 
         return " ".join(highlighted_tokens)
 
+    def _format_relation(self, rel: list) -> str:
+        """Format a relation for display with actual tokens instead of indices.
+
+        Args:
+            rel: Relation in format [start1, end1, start2, end2, relation_type]
+
+        Returns:
+            Formatted string like "relation_type: [tokens1] -> [tokens2]"
+        """
+        # Get tokens
+        if "tokens" in self.data:
+            tokens = self.data["tokens"]
+        elif "sentences" in self.data:
+            tokens = []
+            for sentence in self.data["sentences"]:
+                tokens.extend(sentence)
+        else:
+            tokens = []
+
+        if len(rel) >= 5:
+            start1, end1, start2, end2, relation_type = rel[0], rel[1], rel[2], rel[3], rel[4]
+
+            # Extract token groups
+            group1_tokens = tokens[start1:end1 + 1] if start1 < len(tokens) and end1 < len(tokens) else []
+            group2_tokens = tokens[start2:end2 + 1] if start2 < len(tokens) and end2 < len(tokens) else []
+
+            group1_text = " ".join(group1_tokens)
+            group2_text = " ".join(group2_tokens)
+
+            return f"{relation_type}: [{group1_text}] -> [{group2_text}]"
+        else:
+            return str(rel)
+
     def _create_relations_display(self) -> Container:
         """Create the relations display."""
         relations = self.data.get("relations", [])
 
-        if not relations:
+        # Handle nested relations format
+        relation_items = relations[0] if relations and isinstance(relations[0], list) and isinstance(relations[0][0], list) else relations
+
+        if not relation_items:
             relation_widgets = [Static("No relations found", classes="relation-item")]
         else:
             relation_widgets = []
@@ -211,10 +247,11 @@ class NERViewer(TextualApp):
             )
             relation_widgets.append(select_all_checkbox)
 
-            for i, rel in enumerate(relations):
-                # Create a horizontal container with checkbox and relation text
+            for i, rel in enumerate(relation_items):
+                # Format the relation with actual tokens
+                formatted_rel = self._format_relation(rel)
                 rel_checkbox = Checkbox(
-                    f"{rel}",
+                    formatted_rel,
                     value=False,
                     id=f"relation-{i}",
                     classes="relation-item"
@@ -222,7 +259,7 @@ class NERViewer(TextualApp):
                 relation_widgets.append(rel_checkbox)
 
         container = Vertical(*relation_widgets, id="relations-container")
-        container.border_title = f"Relations ({len(relations)})"
+        container.border_title = f"Relations ({len(relation_items)})"
         return container
 
     def on_checkbox_changed(self, event: Checkbox.Changed) -> None:
