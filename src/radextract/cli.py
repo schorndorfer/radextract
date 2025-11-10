@@ -136,7 +136,7 @@ class NERViewer(TextualApp):
         # Map token indices to their labels and colors
         color_map = {
             "Anatomy::definitely present": "green",
-            "Observation::definitely present": "green",
+            "Observation::definitely present": "blue",
             "Anatomy::definitely absent": "red",
             "Observation::definitely absent": "red",
             "Observation::uncertain": "yellow",
