@@ -220,10 +220,10 @@ class NERViewer(TextualApp):
             group1_tokens = tokens[start1:end1 + 1] if tokens else []
             group2_tokens = tokens[start2:end2 + 1] if tokens else []
 
-            group1_text = " ".join(group1_tokens) if group1_tokens else f"[{start1}:{end1}]"
-            group2_text = " ".join(group2_tokens) if group2_tokens else f"[{start2}:{end2}]"
+            group1_text = " ".join(group1_tokens) if group1_tokens else f"⟦{start1}:{end1}⟧"
+            group2_text = " ".join(group2_tokens) if group2_tokens else f"⟦{start2}:{end2}⟧"
 
-            return f"{relation_type}: [{group1_text}] -> [{group2_text}]"
+            return f"{relation_type}: ⟦{group1_text}⟧ → ⟦{group2_text}⟧"
         else:
             return str(rel)
 
