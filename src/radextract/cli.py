@@ -23,7 +23,7 @@ class NERViewer(TextualApp):
 
     #legend {
         height: auto;
-        padding: 1;
+        padding: 0 1;
         background: $panel;
         border: solid $primary;
         margin: 1 2;
@@ -46,14 +46,19 @@ class NERViewer(TextualApp):
     }
 
     .legend-item {
-        height: auto;
+        height: 1;
         padding: 0 1;
     }
 
-    .filter-checkbox {
+    #filter-section {
         height: auto;
+        margin-top: 0;
+    }
+
+    .filter-checkbox {
+        height: 1;
         padding: 0 1;
-        margin: 0 1;
+        margin: 0;
     }
 
     .text-content {
@@ -99,6 +104,7 @@ class NERViewer(TextualApp):
             Static("Filters:", classes="legend-item"),
             Checkbox("Show Anatomy", value=True, id="checkbox-anatomy", classes="filter-checkbox"),
             Checkbox("Show Observation", value=True, id="checkbox-observation", classes="filter-checkbox"),
+            id="filter-section"
         )
 
         container = Vertical(*legend_items, filter_section, id="legend")
