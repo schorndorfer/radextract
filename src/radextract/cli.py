@@ -216,12 +216,12 @@ class NERViewer(TextualApp):
         if len(rel) >= 5:
             start1, end1, start2, end2, relation_type = rel[0], rel[1], rel[2], rel[3], rel[4]
 
-            # Extract token groups
-            group1_tokens = tokens[start1:end1 + 1] if start1 < len(tokens) and end1 < len(tokens) else []
-            group2_tokens = tokens[start2:end2 + 1] if start2 < len(tokens) and end2 < len(tokens) else []
+            # Extract token groups - Python slicing handles out-of-bounds gracefully
+            group1_tokens = tokens[start1:end1 + 1] if tokens else []
+            group2_tokens = tokens[start2:end2 + 1] if tokens else []
 
-            group1_text = " ".join(group1_tokens)
-            group2_text = " ".join(group2_tokens)
+            group1_text = " ".join(group1_tokens) if group1_tokens else f"[{start1}:{end1}]"
+            group2_text = " ".join(group2_tokens) if group2_tokens else f"[{start2}:{end2}]"
 
             return f"{relation_type}: [{group1_text}] -> [{group2_text}]"
         else:
