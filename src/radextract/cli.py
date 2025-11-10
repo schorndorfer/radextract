@@ -7,25 +7,34 @@ from pathlib import Path
 
 console = rich.get_console()
 
+
 def display_data(data: dict) -> None:
     """Display data from a JSONL row.
 
     Args:
         data: The parsed JSON data to display
     """
-    tokens = data.get('tokens', [])
-    ner = data.get('ner', [])
-    relations = data.get('relations', [])
+    tokens = data.get("tokens", [])
+    ner = data.get("ner", [])
+    relations = data.get("relations", [])
 
-    # Convert NER lists to tuples: [[start, end, label], ...] -> [(start, end, label), ...]
-    ner = [tuple(item) for item in ner]
-   
-
-    # Create a set of all token indices that are part of any NER span
+    # Create a set of all token indices that are part of any NER annotation
     ner_indices = set()
-    for item in ner:
-        start, end = item[0], item[1]
-        ner_indices.update(range(start, end + 1))
+
+    if ner:
+        # Check the format of NER data
+        first_item = ner[0]
+
+        if isinstance(first_item, int):
+            # Simple format: [0, 1, 3] - just token indices
+            ner_indices = set(ner)
+        elif isinstance(first_item, list):
+            # Complex format: [[start, end, label], ...] - convert to tuples and extract spans
+            ner_tuples = [tuple(item) for item in first_item]
+            for item in ner_tuples:
+                if len(item) >= 2:
+                    start, end = item[0], item[1]
+                    ner_indices.update(range(start, end + 1))
 
     # Build the text with NER tokens highlighted in green
     highlighted_tokens = []
@@ -38,6 +47,7 @@ def display_data(data: dict) -> None:
     text = " ".join(highlighted_tokens)
     console.print(text)
 
+
 def _path_exists(p):
     """Validate that a path exists. Accepts a string or Path-like object.
 
@@ -49,13 +59,12 @@ def _path_exists(p):
         raise ValueError(f"path does not exist: {ppath}")
     return ppath
 
-app = App(
-    name="rad-extract",
-    version="0.1.0"
-)
+
+app = App(name="rad-extract", version="0.1.0")
 # NOTE: `cyclopts.App` in the installed version may not accept a `description` kwarg.
 # If a description is needed, set it on the app object after construction or
 # use the library's supported API for help text.
+
 
 @app.command(name="extract")
 def extract_entities(input_file: Path, output_file: Path | None = None) -> None:
@@ -65,13 +74,17 @@ def extract_entities(input_file: Path, output_file: Path | None = None) -> None:
     if output_file:
         print(f"Results will be saved to {output_file}")
 
+
 @app.command(name="batch")
-def batch_process(input_dir: Path, output_dir: Path | None = None, pattern: str = "*.txt") -> None:
+def batch_process(
+    input_dir: Path, output_dir: Path | None = None, pattern: str = "*.txt"
+) -> None:
     """Process multiple radiology reports in a directory."""
     # TODO: Implement batch processing logic
     print(f"Processing files matching '{pattern}' in {input_dir}")
     if output_dir:
         print(f"Results will be saved to {output_dir}")
+
 
 @app.command(name="show-row")
 def show_jsonl_row(jsonl_file: Path, row: int) -> None:
@@ -84,14 +97,14 @@ def show_jsonl_row(jsonl_file: Path, row: int) -> None:
     if not jsonl_file.exists():
         raise ValueError(f"File does not exist: {jsonl_file}")
 
-    if not jsonl_file.suffix == '.jsonl':
+    if not jsonl_file.suffix == ".jsonl":
         raise ValueError(f"File must have .jsonl extension: {jsonl_file}")
 
     if row < 0:
         raise ValueError(f"Row index must be non-negative, got: {row}")
 
     try:
-        with open(jsonl_file, 'r', encoding='utf-8') as f:
+        with open(jsonl_file, "r", encoding="utf-8") as f:
             for i, line in enumerate(f):
                 if i == row:
                     data = json.loads(line)
@@ -104,6 +117,7 @@ def show_jsonl_row(jsonl_file: Path, row: int) -> None:
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON at row {row}: {e}")
 
+
 def main():
     """Entry point for the CLI."""
     # Use the installed cyclopts API: run_async is a coroutine, so run it
@@ -111,6 +125,7 @@ def main():
     import asyncio
 
     return asyncio.run(app.run_async())
+
 
 if __name__ == "__main__":
     main()

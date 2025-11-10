@@ -52,14 +52,14 @@ def test_app_help_contains_commands():
 def test_show_jsonl_row_basic():
     """Test basic functionality of show_jsonl_row with valid data."""
     # Create a temporary JSONL file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
         test_data = [
             {"tokens": ["Hello", "world"], "ner": [0], "relations": []},
             {"tokens": ["Test", "sentence", "here"], "ner": [1, 2], "relations": []},
-            {"tokens": ["Another", "example"], "ner": [], "relations": []}
+            {"tokens": ["Another", "example"], "ner": [], "relations": []},
         ]
         for record in test_data:
-            f.write(json.dumps(record) + '\n')
+            f.write(json.dumps(record) + "\n")
         temp_path = Path(f.name)
 
     try:
@@ -91,7 +91,7 @@ def test_show_jsonl_row_file_not_found():
 
 def test_show_jsonl_row_wrong_extension():
     """Test that show_jsonl_row raises ValueError for non-JSONL file."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
         f.write("test")
         temp_path = Path(f.name)
 
@@ -104,8 +104,8 @@ def test_show_jsonl_row_wrong_extension():
 
 def test_show_jsonl_row_negative_index():
     """Test that show_jsonl_row raises ValueError for negative row index."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
-        f.write(json.dumps({"tokens": ["test"], "ner": [], "relations": []}) + '\n')
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
+        f.write(json.dumps({"tokens": ["test"], "ner": [], "relations": []}) + "\n")
         temp_path = Path(f.name)
 
     try:
@@ -117,8 +117,8 @@ def test_show_jsonl_row_negative_index():
 
 def test_show_jsonl_row_out_of_bounds():
     """Test that show_jsonl_row raises ValueError for out of bounds index."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
-        f.write(json.dumps({"tokens": ["test"], "ner": [], "relations": []}) + '\n')
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
+        f.write(json.dumps({"tokens": ["test"], "ner": [], "relations": []}) + "\n")
         temp_path = Path(f.name)
 
     try:
@@ -141,7 +141,7 @@ def test_display_data_with_ner_highlighting():
         test_data = {
             "tokens": ["The", "patient", "has", "fever"],
             "ner": [1, 3],  # "patient" and "fever" are entities
-            "relations": []
+            "relations": [],
         }
 
         cli.display_data(test_data)
