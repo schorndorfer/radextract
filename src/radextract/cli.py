@@ -4,8 +4,157 @@ import json
 import rich
 from cyclopts import App
 from pathlib import Path
+from textual.app import App as TextualApp, ComposeResult
+from textual.containers import Container, Vertical
+from textual.widgets import Header, Footer, Static, Label
+from textual.screen import Screen
 
 console = rich.get_console()
+
+
+class NERViewer(TextualApp):
+    """A Textual app to display NER data from a JSONL row."""
+
+    CSS = """
+    Screen {
+        background: $surface;
+    }
+
+    #legend {
+        height: auto;
+        padding: 1;
+        background: $panel;
+        border: solid $primary;
+        margin: 1 2;
+    }
+
+    #text-container {
+        height: auto;
+        padding: 1;
+        background: $panel;
+        border: solid $primary;
+        margin: 1 2;
+    }
+
+    #relations-container {
+        height: auto;
+        padding: 1;
+        background: $panel;
+        border: solid $primary;
+        margin: 1 2;
+    }
+
+    .legend-item {
+        height: auto;
+        padding: 0 1;
+    }
+
+    .text-content {
+        height: auto;
+        padding: 1;
+    }
+
+    .relation-item {
+        height: auto;
+        padding: 0 1;
+    }
+    """
+
+    def __init__(self, data: dict):
+        super().__init__()
+        self.data = data
+
+    def compose(self) -> ComposeResult:
+        """Create child widgets for the app."""
+        yield Header()
+        yield self._create_legend()
+        yield self._create_text_display()
+        yield self._create_relations_display()
+        yield Footer()
+
+    def _create_legend(self) -> Container:
+        """Create the legend container."""
+        color_map = {
+            "Definitely Present": "green",
+            "Definitely Absent": "red",
+            "Uncertain/Other": "yellow",
+        }
+
+        legend_items = []
+        for label, color in color_map.items():
+            legend_items.append(Static(f"[{color}]■[/{color}] {label}", classes="legend-item"))
+
+        container = Vertical(*legend_items, id="legend")
+        container.border_title = "Legend"
+        return container
+
+    def _create_text_display(self) -> Container:
+        """Create the text display with NER highlighting."""
+        # Handle both "tokens" and "sentences" keys
+        if "tokens" in self.data:
+            tokens = self.data["tokens"]
+        elif "sentences" in self.data:
+            # Flatten sentences into a single list of tokens
+            tokens = []
+            for sentence in self.data["sentences"]:
+                tokens.extend(sentence)
+        else:
+            tokens = []
+
+        ner = self.data.get("ner", [])
+
+        # Map token indices to their labels and colors
+        color_map = {
+            "Anatomy::definitely present": "green",
+            "Observation::definitely present": "green",
+            "Anatomy::definitely absent": "red",
+            "Observation::definitely absent": "red",
+            "Observation::uncertain": "yellow",
+            "Anatomy::uncertain": "yellow",
+        }
+
+        token_colors = {}
+
+        # Handle both nested and flat NER formats
+        ner_items = ner[0] if ner and isinstance(ner[0], list) and isinstance(ner[0][0], list) else ner
+
+        for item in ner_items:
+            if len(item) >= 3:
+                start, end, label = item[0], item[1], item[2]
+                color = color_map.get(label, "yellow")
+                for idx in range(start, end + 1):
+                    token_colors[idx] = color
+
+        # Build the text with NER tokens highlighted
+        highlighted_tokens = []
+        for i, token in enumerate(tokens):
+            if i in token_colors:
+                color = token_colors[i]
+                highlighted_tokens.append(f"[{color}]{token}[/{color}]")
+            else:
+                highlighted_tokens.append(token)
+
+        text = " ".join(highlighted_tokens)
+        container = Vertical(Static(text, classes="text-content"), id="text-container")
+        container.border_title = "Text with NER Annotations"
+        return container
+
+    def _create_relations_display(self) -> Container:
+        """Create the relations display."""
+        relations = self.data.get("relations", [])
+
+        if not relations:
+            relation_widgets = [Static("No relations found", classes="relation-item")]
+        else:
+            relation_widgets = []
+            for i, rel in enumerate(relations):
+                relation_widgets.append(
+                    Static(f"{i+1}. {rel}", classes="relation-item")
+                )
+
+        container = Vertical(*relation_widgets, id="relations-container")
+        container.border_title = f"Relations ({len(relations)})"
+        return container
 
 
 def display_data(data: dict) -> None:
@@ -97,8 +246,8 @@ def batch_process(
 
 
 @app.command(name="show-row")
-def show_jsonl_row(jsonl_file: Path, row: int) -> None:
-    """Display a specific row from a JSONL file.
+async def show_jsonl_row(jsonl_file: Path, row: int) -> None:
+    """Display a specific row from a JSONL file using an interactive Textual UI.
 
     Args:
         jsonl_file: Path to the JSONL file
@@ -118,7 +267,8 @@ def show_jsonl_row(jsonl_file: Path, row: int) -> None:
             for i, line in enumerate(f):
                 if i == row:
                     data = json.loads(line)
-                    display_data(data)
+                    viewer = NERViewer(data)
+                    await viewer.run_async()
                     return
 
         # If we get here, the row index was out of bounds
