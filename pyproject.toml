@@ -19,6 +19,10 @@ dependencies = [
     "langchain-text-splitters>=0.3.11",
     "llama-index>=0.12.52",
     "langextract>=1.0.9",
+    "jupyter-ai[all]>=2.31.6",
+    "jupyterlab>=4.4.10",
+    "radgraph>=0.1.18",
+    "textualize>=0.1",
 ]
 
 [project.optional-dependencies]
