@@ -214,7 +214,7 @@ class NERViewer(TextualApp):
             for i, rel in enumerate(relations):
                 # Create a horizontal container with checkbox and relation text
                 rel_checkbox = Checkbox(
-                    f"{i+1}. {rel}",
+                    f"{rel}",
                     value=False,
                     id=f"relation-{i}",
                     classes="relation-item"
