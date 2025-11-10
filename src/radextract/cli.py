@@ -90,7 +90,8 @@ class NERViewer(TextualApp):
     def _create_legend(self) -> Container:
         """Create the legend container."""
         color_map = {
-            "Definitely Present": "green",
+            "Anatomy Present": "green",
+            "Observation Present": "blue",
             "Definitely Absent": "red",
             "Uncertain/Other": "yellow",
         }
