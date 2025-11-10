@@ -18,29 +18,36 @@ def display_data(data: dict) -> None:
     ner = data.get("ner", [])
     relations = data.get("relations", [])
 
-    # Create a set of all token indices that are part of any NER annotation
-    ner_indices = set()
+    # Map token indices to their labels and colors
+    token_colors = {}
 
     if ner:
         # Check the format of NER data
         first_item = ner[0]
 
         if isinstance(first_item, int):
-            # Simple format: [0, 1, 3] - just token indices
-            ner_indices = set(ner)
+            # Simple format: [0, 1, 3] - just token indices (default to green)
+            for idx in ner:
+                token_colors[idx] = "green"
         elif isinstance(first_item, list):
             # Complex format: [[start, end, label], ...] - convert to tuples and extract spans
             ner_tuples = [tuple(item) for item in first_item]
             for item in ner_tuples:
-                if len(item) >= 2:
-                    start, end = item[0], item[1]
-                    ner_indices.update(range(start, end + 1))
+                if len(item) >= 3:
+                    start, end, label = item[0], item[1], item[2]
+                    # Determine color based on label
+                    color = (
+                        "orange" if label == "Anatomy::definitely present" else "green"
+                    )
+                    for idx in range(start, end + 1):
+                        token_colors[idx] = color
 
-    # Build the text with NER tokens highlighted in green
+    # Build the text with NER tokens highlighted
     highlighted_tokens = []
     for i, token in enumerate(tokens):
-        if i in ner_indices:
-            highlighted_tokens.append(f"[green]{token}[/green]")
+        if i in token_colors:
+            color = token_colors[i]
+            highlighted_tokens.append(f"[{color}]{token}[/{color}]")
         else:
             highlighted_tokens.append(token)
 
