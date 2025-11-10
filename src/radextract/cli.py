@@ -56,8 +56,8 @@ class NERViewer(TextualApp):
     }
 
     .filter-checkbox {
-        height: 1;
-        padding: 0 1;
+        height: 3;
+        padding: 0;
         margin: 0;
     }
 
