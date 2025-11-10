@@ -30,22 +30,11 @@ def display_data(data: dict) -> None:
 
     token_colors = {}
 
-    if ner:
-        # Check the format of NER data
-        first_item = ner[0]
-
-        if isinstance(first_item, int):
-            # Simple format: [0, 1, 3] - just token indices (default to green)
-            for idx in ner:
-                token_colors[idx] = "green"
-        elif isinstance(first_item, list):
-            # Complex format: [[start, end, label], ...] - RadGraph-XL format
-            for item in first_item:
-                if len(item) >= 3:
-                    start, end, label = item[0], item[1], item[2]
-                    color = color_map.get(label, "yellow")
-                    for idx in range(start, end + 1):
-                        token_colors[idx] = color
+    for item in ner:
+        start, end, label = item[0], item[1], item[2]
+        color = color_map.get(label, "yellow")
+        for idx in range(start, end + 1):
+            token_colors[idx] = color
 
     # Build the text with NER tokens highlighted
     highlighted_tokens = []
