@@ -74,6 +74,7 @@ class NERViewer(TextualApp):
 
     show_anatomy = reactive(True)
     show_observation = reactive(True)
+    selected_relations = reactive(set())
 
     def __init__(self, data: dict):
         super().__init__()
@@ -133,6 +134,7 @@ class NERViewer(TextualApp):
             tokens = []
 
         ner = self.data.get("ner", [])
+        relations = self.data.get("relations", [])
 
         # Map token indices to their labels and colors
         color_map = {
@@ -163,6 +165,23 @@ class NERViewer(TextualApp):
                 for idx in range(start, end + 1):
                     token_colors[idx] = color
 
+        # Add yellow highlighting for tokens in selected relations
+        if self.selected_relations and relations:
+            # Handle nested relations format
+            relation_items = relations[0] if relations and isinstance(relations[0], list) and isinstance(relations[0][0], list) else relations
+
+            for rel_idx in self.selected_relations:
+                if rel_idx < len(relation_items):
+                    rel = relation_items[rel_idx]
+                    if len(rel) >= 5:
+                        # Format: [start1, end1, start2, end2, relation_type]
+                        start1, end1, start2, end2 = rel[0], rel[1], rel[2], rel[3]
+                        # Highlight both entities in the relation
+                        for idx in range(start1, end1 + 1):
+                            token_colors[idx] = "yellow"
+                        for idx in range(start2, end2 + 1):
+                            token_colors[idx] = "yellow"
+
         # Build the text with NER tokens highlighted
         highlighted_tokens = []
         for i, token in enumerate(tokens):
@@ -183,9 +202,14 @@ class NERViewer(TextualApp):
         else:
             relation_widgets = []
             for i, rel in enumerate(relations):
-                relation_widgets.append(
-                    Static(f"{i+1}. {rel}", classes="relation-item")
+                # Create a horizontal container with checkbox and relation text
+                rel_checkbox = Checkbox(
+                    f"{i+1}. {rel}",
+                    value=False,
+                    id=f"relation-{i}",
+                    classes="relation-item"
                 )
+                relation_widgets.append(rel_checkbox)
 
         container = Vertical(*relation_widgets, id="relations-container")
         container.border_title = f"Relations ({len(relations)})"
@@ -197,6 +221,15 @@ class NERViewer(TextualApp):
             self.show_anatomy = event.value
         elif event.checkbox.id == "checkbox-observation":
             self.show_observation = event.value
+        elif event.checkbox.id and event.checkbox.id.startswith("relation-"):
+            # Extract relation index from ID
+            relation_idx = int(event.checkbox.id.split("-")[1])
+            new_selected = set(self.selected_relations)
+            if event.value:
+                new_selected.add(relation_idx)
+            else:
+                new_selected.discard(relation_idx)
+            self.selected_relations = new_selected
 
     def watch_show_anatomy(self, new_value: bool) -> None:
         """React to changes in show_anatomy."""
@@ -205,6 +238,11 @@ class NERViewer(TextualApp):
 
     def watch_show_observation(self, new_value: bool) -> None:
         """React to changes in show_observation."""
+        if self.is_mounted:
+            self._update_text_display()
+
+    def watch_selected_relations(self, new_value: set) -> None:
+        """React to changes in selected_relations."""
         if self.is_mounted:
             self._update_text_display()
 
