@@ -75,6 +75,7 @@ class NERViewer(TextualApp):
     show_anatomy = reactive(True)
     show_observation = reactive(True)
     selected_relations = reactive(set())
+    select_all_relations = reactive(False)
 
     def __init__(self, data: dict):
         super().__init__()
@@ -201,6 +202,15 @@ class NERViewer(TextualApp):
             relation_widgets = [Static("No relations found", classes="relation-item")]
         else:
             relation_widgets = []
+            # Add "Select All" checkbox at the top
+            select_all_checkbox = Checkbox(
+                "Select All",
+                value=False,
+                id="select-all-relations",
+                classes="relation-item"
+            )
+            relation_widgets.append(select_all_checkbox)
+
             for i, rel in enumerate(relations):
                 # Create a horizontal container with checkbox and relation text
                 rel_checkbox = Checkbox(
@@ -221,6 +231,8 @@ class NERViewer(TextualApp):
             self.show_anatomy = event.value
         elif event.checkbox.id == "checkbox-observation":
             self.show_observation = event.value
+        elif event.checkbox.id == "select-all-relations":
+            self.select_all_relations = event.value
         elif event.checkbox.id and event.checkbox.id.startswith("relation-"):
             # Extract relation index from ID
             relation_idx = int(event.checkbox.id.split("-")[1])
@@ -245,6 +257,31 @@ class NERViewer(TextualApp):
         """React to changes in selected_relations."""
         if self.is_mounted:
             self._update_text_display()
+
+    def watch_select_all_relations(self, new_value: bool) -> None:
+        """React to changes in select_all_relations."""
+        if self.is_mounted:
+            relations = self.data.get("relations", [])
+            if new_value:
+                # Select all relations
+                self.selected_relations = set(range(len(relations)))
+                # Update all individual checkboxes
+                for i in range(len(relations)):
+                    try:
+                        checkbox = self.query_one(f"#relation-{i}", Checkbox)
+                        checkbox.value = True
+                    except Exception:
+                        pass
+            else:
+                # Deselect all relations
+                self.selected_relations = set()
+                # Update all individual checkboxes
+                for i in range(len(relations)):
+                    try:
+                        checkbox = self.query_one(f"#relation-{i}", Checkbox)
+                        checkbox.value = False
+                    except Exception:
+                        pass
 
     def _update_text_display(self) -> None:
         """Update the text display with current filter settings."""
