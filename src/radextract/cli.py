@@ -14,11 +14,20 @@ def display_data(data: dict) -> None:
     Args:
         data: The parsed JSON data to display
     """
-    tokens = data.get("tokens", [])
-    ner = data.get("ner", [])
-    relations = data.get("relations", [])
+    tokens = data["tokens"]
+    ner = data["ner"]
+    relations = data["relations"]
 
     # Map token indices to their labels and colors
+    color_map = {
+        "Anatomy::definitely present": "green",
+        "Observation::definitely present": "green",
+        "Anatomy::definitely absent": "red",
+        "Observation::definitely absent": "red",
+        "Observation::uncertain": "yellow",
+        "Anatomy::uncertain": "yellow",
+    }
+
     token_colors = {}
 
     if ner:
@@ -30,15 +39,11 @@ def display_data(data: dict) -> None:
             for idx in ner:
                 token_colors[idx] = "green"
         elif isinstance(first_item, list):
-            # Complex format: [[start, end, label], ...] - convert to tuples and extract spans
-            ner_tuples = [tuple(item) for item in first_item]
-            for item in ner_tuples:
+            # Complex format: [[start, end, label], ...] - RadGraph-XL format
+            for item in first_item:
                 if len(item) >= 3:
                     start, end, label = item[0], item[1], item[2]
-                    # Determine color based on label
-                    color = (
-                        "orange" if label == "Anatomy::definitely present" else "green"
-                    )
+                    color = color_map.get(label, "yellow")
                     for idx in range(start, end + 1):
                         token_colors[idx] = color
 
@@ -51,6 +56,15 @@ def display_data(data: dict) -> None:
         else:
             highlighted_tokens.append(token)
 
+    # print a color legend
+    legend_items = [
+        "[green]Definitely Present[/green]",
+        "[red]Definitely Absent[/red]",
+        "[yellow]Uncertain/Other[/yellow]",
+    ]
+    console.print("-" * 80)
+    console.print("Legend: " + " | ".join(legend_items))
+    console.print("-" * 80)
     text = " ".join(highlighted_tokens)
     console.print(text)
 
