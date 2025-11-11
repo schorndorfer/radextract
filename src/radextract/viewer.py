@@ -155,6 +155,7 @@ class NERViewer(TextualApp):
         }
 
         token_colors = {}
+        selected_relation_tokens = set()
 
         # Handle both nested and flat NER formats
         ner_items = (
@@ -177,7 +178,7 @@ class NERViewer(TextualApp):
                 for idx in range(start, end + 1):
                     token_colors[idx] = color
 
-        # Add yellow highlighting for tokens in selected relations
+        # Track tokens in selected relations for bold and underline formatting
         if self.selected_relations and relations:
             # Handle nested relations format
             relation_items = (
@@ -194,16 +195,28 @@ class NERViewer(TextualApp):
                     if len(rel) >= 5:
                         # Format: [start1, end1, start2, end2, relation_type]
                         start1, end1, start2, end2 = rel[0], rel[1], rel[2], rel[3]
-                        # Highlight both entities in the relation
+                        # Mark both entities in the relation for bold+underline
                         for idx in range(start1, end1 + 1):
-                            token_colors[idx] = "yellow"
+                            selected_relation_tokens.add(idx)
                         for idx in range(start2, end2 + 1):
-                            token_colors[idx] = "yellow"
+                            selected_relation_tokens.add(idx)
 
         # Build the text with NER tokens highlighted
         highlighted_tokens = []
         for i, token in enumerate(tokens):
-            if i in token_colors:
+            # Check if token is in a selected relation
+            if i in selected_relation_tokens:
+                # Apply bold and underline
+                if i in token_colors:
+                    color = token_colors[i]
+                    highlighted_tokens.append(
+                        f"[bold underline {color}]{token}[/bold underline {color}]"
+                    )
+                else:
+                    highlighted_tokens.append(
+                        f"[bold underline]{token}[/bold underline]"
+                    )
+            elif i in token_colors:
                 color = token_colors[i]
                 highlighted_tokens.append(f"[{color}]{token}[/{color}]")
             else:
