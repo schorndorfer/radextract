@@ -232,7 +232,7 @@ def test_extract_entities_json_missing_text_field():
         input_path = Path(f.name)
 
     try:
-        with pytest.raises(ValueError, match="must contain a 'text' field"):
+        with pytest.raises(ValueError, match="must contain a 'text' or 'tokens' field"):
             cli.extract_entities(input_path, None)
     finally:
         input_path.unlink()
