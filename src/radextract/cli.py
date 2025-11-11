@@ -6,6 +6,7 @@ from cyclopts import App
 from pathlib import Path
 
 from .viewer import NERViewer
+from .extract import extract_entities as extract_entities_fn
 
 console = rich.get_console()
 
@@ -30,25 +31,64 @@ app = App(name="rad-extract", version="0.1.0")
 
 @app.command(name="extract")
 def extract_entities(input_file: Path, output_file: Path | None = None) -> None:
-    """Extract clinical entities from a radiology report file."""
-    # TODO: Implement extraction logic
-    print(f"Processing {input_file}")
+    """Extract clinical entities from a radiology report file.
+
+    Accepts JSON files with a required "text" field and optional "entities"
+    and "relations" fields. For plain text files, reads the entire content as text.
+    """
+    if not input_file.exists():
+        raise ValueError(f"Input file does not exist: {input_file}")
+
+    # Read the input file
+    with open(input_file, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Check if input is JSON
+    if input_file.suffix.lower() in [".json", ".jsonl"]:
+        try:
+            data = json.loads(content)
+            if not isinstance(data, dict):
+                raise ValueError("JSON input must be an object/dictionary")
+            if "text" in data:
+                text = data["text"]
+            elif "tokens" in data:
+                text = " ".join(data["tokens"])
+            else:
+                raise ValueError("JSON input must contain a 'text' or 'tokens' field")
+            
+            # Preserve optional fields if present
+            existing_entities = data.get("entities", [])
+            existing_relations = data.get("relations", [])
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in input file: {e}")
+    else:
+        # Plain text file
+        text = content
+        existing_entities = []
+        existing_relations = []
+
+    # Extract entities
+    result = extract_entities_fn(text)
+
+    # Merge with existing data if JSON input had these fields
+    if input_file.suffix.lower() in [".json", ".jsonl"]:
+        # Preserve entities field if it existed in input
+        if "entities" in data:
+            result["entities"] = existing_entities
+        # Preserve relations field if it existed in input
+        if "relations" in data:
+            result["relations"] = existing_relations
+
+    # Output results
     if output_file:
-        print(f"Results will be saved to {output_file}")
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2)
+        console.print(f"[green]Results saved to {output_file}[/green]")
+    else:
+        console.print_json(data=result)
 
 
-@app.command(name="batch")
-def batch_process(
-    input_dir: Path, output_dir: Path | None = None, pattern: str = "*.txt"
-) -> None:
-    """Process multiple radiology reports in a directory."""
-    # TODO: Implement batch processing logic
-    print(f"Processing files matching '{pattern}' in {input_dir}")
-    if output_dir:
-        print(f"Results will be saved to {output_dir}")
-
-
-@app.command(name="show-row")
+@app.command(name="display")
 async def show_jsonl_row(jsonl_file: Path, row: int) -> None:
     """Display a specific row from a JSONL file using an interactive Textual UI.
 

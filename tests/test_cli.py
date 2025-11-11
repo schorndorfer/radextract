@@ -16,12 +16,10 @@ def test_cli_module_exports():
     assert hasattr(cli, "app")
     assert hasattr(cli, "main")
     assert hasattr(cli, "extract_entities")
-    assert hasattr(cli, "batch_process")
     assert hasattr(cli, "show_jsonl_row")
 
     assert callable(cli.main)
     assert callable(cli.extract_entities)
-    assert callable(cli.batch_process)
     assert callable(cli.show_jsonl_row)
 
 
@@ -45,8 +43,7 @@ def test_app_help_contains_commands():
     # Should contain help/commands and our command names
     assert "Commands" in out or "COMMANDS" in out or "Commands" in out
     assert "extract" in out
-    assert "batch" in out
-    assert "show-row" in out
+    assert "display" in out
 
 
 @pytest.mark.asyncio
@@ -132,3 +129,124 @@ async def test_show_jsonl_row_out_of_bounds():
             await cli.show_jsonl_row(temp_path, 10)
     finally:
         temp_path.unlink()
+
+
+def test_extract_entities_integration():
+    """Test that extract_entities integrates with the extract module."""
+    # Create a temporary input file
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write("Test radiology report text.")
+        input_path = Path(f.name)
+
+    # Create a temporary output file
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        output_path = Path(f.name)
+
+    try:
+        # Call the extract_entities CLI function
+        cli.extract_entities(input_path, output_path)
+
+        # Verify the output file was created and contains expected structure
+        assert output_path.exists()
+        with open(output_path, "r") as f:
+            result = json.load(f)
+
+        assert "text" in result
+        assert "entities" in result
+        assert result["text"] == "Test radiology report text."
+        assert isinstance(result["entities"], list)
+    finally:
+        input_path.unlink()
+        output_path.unlink()
+
+
+def test_extract_entities_json_input():
+    """Test extract_entities with JSON input containing text field."""
+    # Create a temporary JSON input file
+    input_data = {"text": "Sample radiology report."}
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(input_data, f)
+        input_path = Path(f.name)
+
+    # Create a temporary output file
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        output_path = Path(f.name)
+
+    try:
+        # Call the extract_entities CLI function
+        cli.extract_entities(input_path, output_path)
+
+        # Verify the output
+        assert output_path.exists()
+        with open(output_path, "r") as f:
+            result = json.load(f)
+
+        assert "text" in result
+        assert "entities" in result
+        assert result["text"] == "Sample radiology report."
+    finally:
+        input_path.unlink()
+        output_path.unlink()
+
+
+def test_extract_entities_json_with_existing_fields():
+    """Test extract_entities preserves existing entities and relations."""
+    # Create a temporary JSON input file with existing entities and relations
+    # Note: JSON doesn't preserve tuples, they become lists
+    input_data = {
+        "text": "Sample report.",
+        "entities": [[0, 6, "Sample", "test"]],
+        "relations": [[0, 0, 1, 1, "test_relation"]],
+    }
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(input_data, f)
+        input_path = Path(f.name)
+
+    # Create a temporary output file
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        output_path = Path(f.name)
+
+    try:
+        # Call the extract_entities CLI function
+        cli.extract_entities(input_path, output_path)
+
+        # Verify the output preserves existing fields
+        assert output_path.exists()
+        with open(output_path, "r") as f:
+            result = json.load(f)
+
+        assert result["text"] == "Sample report."
+        assert result["entities"] == [[0, 6, "Sample", "test"]]
+        assert result["relations"] == [[0, 0, 1, 1, "test_relation"]]
+    finally:
+        input_path.unlink()
+        output_path.unlink()
+
+
+def test_extract_entities_json_missing_text_field():
+    """Test extract_entities raises error when JSON missing text field."""
+    # Create a temporary JSON input file without text field
+    input_data = {"entities": [], "relations": []}
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(input_data, f)
+        input_path = Path(f.name)
+
+    try:
+        with pytest.raises(ValueError, match="must contain a 'text' field"):
+            cli.extract_entities(input_path, None)
+    finally:
+        input_path.unlink()
+
+
+def test_extract_entities_invalid_json():
+    """Test extract_entities raises error for invalid JSON."""
+    # Create a temporary file with invalid JSON
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        f.write("{invalid json content")
+        input_path = Path(f.name)
+
+    try:
+        with pytest.raises(ValueError, match="Invalid JSON"):
+            cli.extract_entities(input_path, None)
+    finally:
+        input_path.unlink()
