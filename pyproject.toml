@@ -23,6 +23,8 @@ dependencies = [
     "jupyterlab>=4.4.10",
     "radgraph>=0.1.18",
     "textualize>=0.1",
+    "textual>=6.6.0",
+    "rich>=14.2.0",
 ]
 
 [project.optional-dependencies]
@@ -43,4 +45,5 @@ build-backend = "uv_build"
 dev = [
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
+    "ruff>=0.14.4",
 ]
