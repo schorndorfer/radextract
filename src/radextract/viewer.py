@@ -206,15 +206,15 @@ class NERViewer(TextualApp):
         for i, token in enumerate(tokens):
             # Check if token is in a selected relation
             if i in selected_relation_tokens:
-                # Apply bold, underline, and larger font size
+                # Apply bold, underline, larger font size, and background color
                 if i in token_colors:
                     color = token_colors[i]
                     highlighted_tokens.append(
-                        f"[bold underline {color}][big]{token}[/big][/bold underline {color}]"
+                        f"[bold underline {color} on grey23][big]{token}[/big][/bold underline {color} on grey23]"
                     )
                 else:
                     highlighted_tokens.append(
-                        f"[bold underline][big]{token}[/big][/bold underline]"
+                        f"[bold underline on grey23][big]{token}[/big][/bold underline on grey23]"
                     )
             elif i in token_colors:
                 color = token_colors[i]
