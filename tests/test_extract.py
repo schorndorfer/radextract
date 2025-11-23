@@ -1,6 +1,5 @@
 """Tests for the extract module."""
 
-import pytest
 from radextract.extract import extract_entities
 
 

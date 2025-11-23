@@ -1,9 +1,14 @@
 """Interactive NER viewer module for displaying annotated text."""
 
-from textual.app import App as TextualApp, ComposeResult
-from textual.containers import Container, Vertical
-from textual.widgets import Header, Footer, Static, Checkbox
+from textual.app import App as TextualApp
+from textual.app import ComposeResult
+from textual.containers import Container
+from textual.containers import Vertical
 from textual.reactive import reactive
+from textual.widgets import Checkbox
+from textual.widgets import Footer
+from textual.widgets import Header
+from textual.widgets import Static
 
 
 class NERViewer(TextualApp):
@@ -257,8 +262,7 @@ class NERViewer(TextualApp):
             )
 
             return f"{relation_type}: ⟦{group1_text}⟧ → ⟦{group2_text}⟧"
-        else:
-            return str(rel)
+        return str(rel)
 
     def _create_relations_display(self) -> Container:
         """Create the relations display."""

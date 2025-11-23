@@ -1,14 +1,12 @@
-from io import StringIO
 import inspect
 import json
 import tempfile
+from io import StringIO
 from pathlib import Path
 
 import pytest
-
-from rich.console import Console
-
 import radextract.cli as cli
+from rich.console import Console
 
 
 def test_cli_module_exports():
@@ -70,7 +68,7 @@ async def test_show_jsonl_row_basic():
         # We'll just verify it reads the file and creates NERViewer
         import json as json_lib
 
-        with open(temp_path, "r") as f:
+        with open(temp_path) as f:
             line = f.readline()
             data = json_lib.loads(line)
             from radextract.viewer import NERViewer
@@ -148,7 +146,7 @@ def test_extract_entities_integration():
 
         # Verify the output file was created and contains expected structure
         assert output_path.exists()
-        with open(output_path, "r") as f:
+        with open(output_path) as f:
             result = json.load(f)
 
         assert "text" in result
@@ -178,7 +176,7 @@ def test_extract_entities_json_input():
 
         # Verify the output
         assert output_path.exists()
-        with open(output_path, "r") as f:
+        with open(output_path) as f:
             result = json.load(f)
 
         assert "text" in result
@@ -212,7 +210,7 @@ def test_extract_entities_json_with_existing_fields():
 
         # Verify the output preserves existing fields
         assert output_path.exists()
-        with open(output_path, "r") as f:
+        with open(output_path) as f:
             result = json.load(f)
 
         assert result["text"] == "Sample report."

@@ -1,12 +1,13 @@
 """Command line interface for rad-extract."""
 
 import json
-import rich
-from cyclopts import App
 from pathlib import Path
 
-from .viewer import NERViewer
+import rich
+from cyclopts import App
+
 from .extract import extract_entities as extract_entities_fn
+from .viewer import NERViewer
 
 console = rich.get_console()
 
@@ -40,7 +41,7 @@ def extract_entities(input_file: Path, output_file: Path | None = None) -> None:
         raise ValueError(f"Input file does not exist: {input_file}")
 
     # Read the input file
-    with open(input_file, "r", encoding="utf-8") as f:
+    with open(input_file, encoding="utf-8") as f:
         content = f.read()
 
     # Check if input is JSON
@@ -55,7 +56,7 @@ def extract_entities(input_file: Path, output_file: Path | None = None) -> None:
                 text = " ".join(data["tokens"])
             else:
                 raise ValueError("JSON input must contain a 'text' or 'tokens' field")
-            
+
             # Preserve optional fields if present
             existing_entities = data.get("entities", [])
             existing_relations = data.get("relations", [])
@@ -106,7 +107,7 @@ async def show_jsonl_row(jsonl_file: Path, row: int) -> None:
         raise ValueError(f"Row index must be non-negative, got: {row}")
 
     try:
-        with open(jsonl_file, "r", encoding="utf-8") as f:
+        with open(jsonl_file, encoding="utf-8") as f:
             for i, line in enumerate(f):
                 if i == row:
                     data = json.loads(line)
