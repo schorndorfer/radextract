@@ -14,3 +14,10 @@ wheels/
 
 # Data files
 data/
+
+# Environment and secrets
+.env
+
+# Test coverage
+.coverage
+htmlcov/
