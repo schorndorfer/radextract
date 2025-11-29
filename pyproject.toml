@@ -25,6 +25,7 @@ dependencies = [
     "textualize>=0.1",
     "textual>=6.6.0",
     "rich>=14.2.0",
+    "neo4j>=6.0.3",
 ]
 
 [project.optional-dependencies]
