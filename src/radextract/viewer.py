@@ -19,6 +19,14 @@ class NERViewer(TextualApp):
         background: $surface;
     }
 
+    #document-info {
+        height: auto;
+        padding: 0 1;
+        background: $panel;
+        border: solid $primary;
+        margin: 1 2;
+    }
+
     #legend {
         height: auto;
         padding: 0 1;
@@ -82,10 +90,26 @@ class NERViewer(TextualApp):
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
         yield Header()
+        yield self._create_document_info()
         yield self._create_legend()
         yield self._create_text_display()
         yield self._create_relations_display()
         yield Footer()
+
+    def _create_document_info(self) -> Container:
+        """Create the document information container."""
+        # Extract document source from data
+        dataset = self.data.get("dataset", "Unknown")
+        doc_key = self.data.get("doc_key", "N/A")
+
+        info_text = f"Dataset: {dataset}  |  Document ID: {doc_key}"
+
+        container = Vertical(
+            Static(info_text, classes="legend-item"),
+            id="document-info"
+        )
+        container.border_title = "Document Information"
+        return container
 
     def _create_legend(self) -> Container:
         """Create the legend container."""
