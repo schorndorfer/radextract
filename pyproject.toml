@@ -26,6 +26,7 @@ dependencies = [
     "textual>=6.6.0",
     "rich>=14.2.0",
     "neo4j>=6.0.3",
+    "fastexcel>=0.18.0",
 ]
 
 [project.optional-dependencies]
